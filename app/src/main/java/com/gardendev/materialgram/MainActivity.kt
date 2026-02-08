@@ -3,14 +3,18 @@ package com.gardendev.materialgram
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.* // Это лечит mutableStateOf
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import org.drinkless.tdlib.Client
 import org.drinkless.tdlib.TdApi
 import com.gardendev.materialgram.TelegramClient
 
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +51,75 @@ class MainActivity : ComponentActivity() {
             }
             is TdApi.AuthorizationStateReady -> {
                 Log.d("TDLib", "Пользователь авторизован!")
+                loadChatsFromTDLib()
             }
         }
+    }
+
+    private fun loadChatsFromTDLib() {
+        // 1. Запрашиваем 20 последних чатов из главного списка
+        TelegramClient.Telegram.client?.send(TdApi.GetChats(TdApi.ChatListMain(), 20)) { result ->
+            when (result) {
+                is TdApi.Chats -> {
+                    val chatItems = mutableListOf<ChatItem>()
+                    val totalChats = result.chatIds.size
+
+                    // 2. Проходим циклом по всем ID чатов
+                    result.chatIds.forEach { chatId ->
+                        TelegramClient.Telegram.client?.send(TdApi.GetChat(chatId)) { chat ->
+                            if (chat is TdApi.Chat) {
+
+                                // Формируем текст последнего сообщения
+                                val lastMsgText = formatMessage(chat.lastMessage)
+
+                                // Берем путь к фото, если оно уже скачано
+                                val photoPath = chat.photo?.small?.local?.path
+
+                                // Добавляем чат в наш список
+                                chatItems.add(ChatItem(chat.id, chat.title, lastMsgText, photoPath))
+
+                                // 3. Когда получили данные о последнем чате — обновляем экран
+                                if (chatItems.size == totalChats) {
+                                    val recyclerView = findViewById<RecyclerView>(R.id.chatList)
+                                    val adapter = ChatAdapter(emptyList())
+
+                                    recyclerView.layoutManager = LinearLayoutManager(this)
+                                    recyclerView.adapter = adapter
+                                    runOnUiThread {
+                                        // Передаем готовый список в адаптер
+                                        adapter.updateList(chatItems)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                is TdApi.Error -> {
+                    runOnUiThread {
+                        Toast.makeText(this, "Ошибка загрузки: ${result.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun formatMessage(message: TdApi.Message?): String {
+        if (message == null) return "Нет сообщений"
+
+        // Получаем имя отправителя (упрощенно)
+        val senderPrefix = if (message.isOutgoing) "Вы: " else ""
+
+        val text = when (val content = message.content) {
+            is TdApi.MessageText -> content.text.text
+            is TdApi.MessagePhoto -> "🖼 Фото"
+            is TdApi.MessageVideo -> "📹 Видео"
+            is TdApi.MessageSticker -> "Наклейка ${content.sticker.emoji}"
+            else -> "Сообщение"
+        }
+        return "$senderPrefix$text"
+    }
+
+    private fun downloadFile(fileId: Int) {
+        TelegramClient.Telegram.client?.send(TdApi.DownloadFile(fileId, 1, 0, 0, false), null)
     }
 }

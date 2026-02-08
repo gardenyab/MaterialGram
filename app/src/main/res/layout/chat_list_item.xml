@@ -44,7 +44,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/textView4"
+        android:id="@+id/lastmessage"
         android:layout_width="321dp"
         android:layout_height="24dp"
         android:layout_marginStart="76dp"
