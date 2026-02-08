@@ -4,21 +4,22 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.runtime.* // Это лечит mutableStateOf
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import org.drinkless.tdlib.Client
 import org.drinkless.tdlib.TdApi
-import com.gardendev.materialgram.TelegramClient
-
 
 class MainActivity : AppCompatActivity() {
-
+    private val adapter = ChatAdapter(mutableListOf())
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        val recyclerView = findViewById<RecyclerView>(R.id.chatList)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
 
         // Инициализируем или получаем существующий клиент
         TelegramClient.Telegram.initClient { update ->
@@ -80,11 +81,6 @@ class MainActivity : AppCompatActivity() {
 
                                 // 3. Когда получили данные о последнем чате — обновляем экран
                                 if (chatItems.size == totalChats) {
-                                    val recyclerView = findViewById<RecyclerView>(R.id.chatList)
-                                    val adapter = ChatAdapter(emptyList())
-
-                                    recyclerView.layoutManager = LinearLayoutManager(this)
-                                    recyclerView.adapter = adapter
                                     runOnUiThread {
                                         // Передаем готовый список в адаптер
                                         adapter.updateList(chatItems)
