@@ -1,1 +1,1 @@
-ig
+An unofficial **Telegram client** inspired by **Material Design**
