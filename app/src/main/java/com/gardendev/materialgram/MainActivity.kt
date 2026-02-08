@@ -28,6 +28,23 @@ class MainActivity : AppCompatActivity() {
                     handleAuthState(update.authorizationState)
                 }
             }
+            else if (update is TdApi.UpdateFile) {
+                val file = update.file
+                if (file.local.isDownloadingCompleted && !file.local.path.isNullOrEmpty()) {
+                    runOnUiThread {
+                        // Самый простой способ: просим список обновиться.
+                        // Он увидит новые пути в тех же объектах и Glide их подтянет.
+                        adapter.notifyDataSetChanged()
+                    }
+                }
+            }
+            else if (update is TdApi.UpdateChatLastMessage) {
+
+                runOnUiThread {
+                    loadChatsFromTDLib()
+                }
+            }
+
         }
     }
 
@@ -54,12 +71,13 @@ class MainActivity : AppCompatActivity() {
                 Log.d("TDLib", "Пользователь авторизован!")
                 loadChatsFromTDLib()
             }
+
         }
     }
 
     private fun loadChatsFromTDLib() {
         // 1. Запрашиваем 20 последних чатов из главного списка
-        TelegramClient.Telegram.client?.send(TdApi.GetChats(TdApi.ChatListMain(), 20)) { result ->
+        TelegramClient.Telegram.client?.send(TdApi.GetChats(TdApi.ChatListMain(), 1000)) { result ->
             when (result) {
                 is TdApi.Chats -> {
                     val chatItems = mutableListOf<ChatItem>()
@@ -74,10 +92,16 @@ class MainActivity : AppCompatActivity() {
                                 val lastMsgText = formatMessage(chat.lastMessage)
 
                                 // Берем путь к фото, если оно уже скачано
-                                val photoPath = chat.photo?.small?.local?.path
+                                val photo = chat.photo?.small
+                                val photoPath = photo?.local?.path // Берем то, что есть сейчас
 
-                                // Добавляем чат в наш список
-                                chatItems.add(ChatItem(chat.id, chat.title, lastMsgText, photoPath))
+// Если фото существует, но файла на диске нет (путь пустой или файл не докачан)
+                                if (photo != null && (photoPath.isNullOrEmpty() || !photo.local.isDownloadingCompleted)) {
+                                    downloadFile(photo.id)
+                                }
+
+// Добавляем в список как есть (пока с пустым путем)
+                                chatItems.add(ChatItem(chat.id, chat.title, lastMsgText, photoPath, isChatPinned(chat)))
 
                                 // 3. Когда получили данные о последнем чате — обновляем экран
                                 if (chatItems.size == totalChats) {
@@ -116,6 +140,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun downloadFile(fileId: Int) {
-        TelegramClient.Telegram.client?.send(TdApi.DownloadFile(fileId, 1, 0, 0, false), null)
+        TelegramClient.Telegram.client?.send(TdApi.DownloadFile(fileId, 500, 0, 0, true)) { result ->
+            if (result is TdApi.Error) {
+                // Если ошибка "File is too old" или подобная, иногда помогает
+                // повторный запрос через небольшой промежуток времени
+                Log.e("TDLib_Photo", "Ошибка файла $fileId: ${result.message}")
+            }
+        }
     }
+    private fun isChatPinned(chat: TdApi.Chat): Boolean {
+        // Проходим по всем позициям чата (обычно она одна для главного списка)
+        for (position in chat.positions) {
+            if (position.list is TdApi.ChatListMain && position.isPinned) {
+                return true
+            }
+        }
+        return false
+    }
+
 }

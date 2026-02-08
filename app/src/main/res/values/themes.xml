@@ -9,4 +9,8 @@
     <style name="CircleImageStyle">
         <item name="cornerSize">50%</item>
     </style>
+    <style name="ChatCardCorners">
+        <item name="cornerFamily">cut</item>
+        <item name="cornerSize">12dp</item>
+    </style>
 </resources>
