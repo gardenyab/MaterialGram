@@ -2,10 +2,10 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/registerPage2"
+    android:id="@+id/registerPage3"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".RegisterPage2">
+    tools:context=".RegisterPage3">
 
     <Button
         android:id="@+id/regButton"
@@ -40,8 +40,8 @@
         android:background="@drawable/rounded_edit_text_once"
         android:ems="10"
         android:fontFamily="@font/gs_regular"
-        android:hint="Enter number"
-        android:inputType="phone"
+        android:hint="Enter code"
+        android:inputType="numberPassword"
         app:circularflow_defaultRadius="50dp"
         app:circularflow_radiusInDP="50dp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -54,7 +54,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:fontFamily="@font/gs_semibold"
-        android:text="Your phone number"
+        android:text="Check your Telegram messages"
         android:textSize="20sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
@@ -63,10 +63,10 @@
 
     <TextView
         android:id="@+id/textView2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="359dp"
+        android:layout_height="55dp"
         android:fontFamily="@font/gs_medium"
-        android:text="Please, enter your phone number"
+        android:text="We`ve sent the code to the **Telegram app** on your other device."
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView" />

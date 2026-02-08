@@ -32,6 +32,7 @@
         tools:srcCompat="@drawable/ic_launcher" />
 
     <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/chatList"
         android:layout_width="380dp"
         android:layout_height="628dp"
         android:layout_margin="8dp"
