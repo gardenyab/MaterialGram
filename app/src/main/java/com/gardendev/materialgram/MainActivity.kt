@@ -20,6 +20,9 @@ class MainActivity : AppCompatActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.chatList)
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
+        val intent = Intent(this, StartActivity::class.java)
+        startActivity(intent)
+        finish()
 
         // Инициализируем или получаем существующий клиент
         TelegramClient.Telegram.initClient { update ->
