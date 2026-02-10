@@ -56,8 +56,8 @@ class MainActivity : AppCompatActivity() {
             is TdApi.AuthorizationStateWaitTdlibParameters -> {
                 val params = TdApi.SetTdlibParameters().apply {
                     databaseDirectory = filesDir.absolutePath + "/tdlib"
-                    apiId = 22117770
-                    apiHash = "3cb28298ff881d18cd2dfab70f1e8f71"
+                    apiId = 35172397
+                    apiHash = "b9624baa26c8cdc635dcf5d28cb2bfee"
                     useMessageDatabase = true
                     systemLanguageCode = "ru"
                     deviceModel = "Android"
@@ -66,9 +66,7 @@ class MainActivity : AppCompatActivity() {
                 TelegramClient.Telegram.client?.send(params) { }
             }
             is TdApi.AuthorizationStateWaitPhoneNumber -> {
-                val intent = Intent(this, RegisterPage::class.java)
-                startActivity(intent)
-                finish()
+
             }
             is TdApi.AuthorizationStateReady -> {
                 Log.d("TDLib", "Пользователь авторизован!")

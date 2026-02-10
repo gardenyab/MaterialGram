@@ -1,4 +1,19 @@
 <resources>
     <string name="app_name">MaterialGram</string>
     <string name="title_activity_start">StartActivity</string>
+    <string name="AppDescriptionShort">An unofficial Telegram client inspired by Material Design</string>
+    <string name="Continue">Continue</string>
+    <string name="title_activity_number">NumberActivity</string>
+    <string name="StartText">Please enter your phone number.</string>
+    <string name="YourNumber">Your phone number</string>
+    <string name="PhoneNumber">Phone number</string>
+    <string name="InvalidPhoneNumber">Invalid phone number</string>
+    <string name="Next">Next</string>
+    <string name="StartMessaging">Start Messaging</string>
+    <string name="title_activity_code">CodeActivity</string>
+    <string name="YourCode">Phone Verification</string>
+    <string name="SentAppCodeWithPhone">We\'ve sent the code to the Telegram app on your other device.</string>
+    <string name="SentAppCodeTitle">Check your Telegram messages</string>
+    <string name="SentSmsCodeTitle">Enter code</string>
+    <string name="WrongCode">Wrong code, please try again.</string>
 </resources>
