@@ -15,8 +15,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -105,6 +109,7 @@ fun NumberPage(modifier: Modifier = Modifier) {
                         Text(stringResource(R.string.InvalidPhoneNumber), color = MaterialTheme.colorScheme.error)
                     }
                 },
+                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
             )
             Button(
@@ -112,7 +117,7 @@ fun NumberPage(modifier: Modifier = Modifier) {
                     isSendingCode = true
                     TelegramClient.Telegram.client?.send(TdApi.SetAuthenticationPhoneNumber(phoneNumber, null)) { result ->
                         if (result is TdApi.Ok) {
-                            context.startActivity(Intent(context, RegisterPage3::class.java))
+                            context.startActivity(Intent(context, CodeActivity::class.java))
                             isSendingCode = false
                         }
                         else {

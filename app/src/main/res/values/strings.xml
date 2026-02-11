@@ -15,5 +15,13 @@
     <string name="SentAppCodeWithPhone">We\'ve sent the code to the Telegram app on your other device.</string>
     <string name="SentAppCodeTitle">Check your Telegram messages</string>
     <string name="SentSmsCodeTitle">Enter code</string>
-    <string name="WrongCode">Wrong code, please try again.</string>
+    <string name="WrongCode">Wrong code</string>
+    <string name="title_activity_two_faactivity">TwoFAActivity</string>
+    <string name="TwoStepVerification">Two-Step Verification</string>
+    <string name="YourPasswordHeader">Your password</string>
+    <string name="YourPasswordRemember">Your account is protected by 2-Step Verification.</string>
+    <string name="Confirm">Confirm</string>
+    <string name="WrongPassword">Wrong password</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="title_activity_chat_page">ChatPage</string>
 </resources>

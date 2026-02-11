@@ -18,6 +18,7 @@ import android.util.TypedValue
 import androidx.annotation.AttrRes
 import androidx.core.content.ContextCompat
 
+/*
 class ChatAdapter(private var chats: List<ChatItem>) : RecyclerView.Adapter<ChatAdapter.ChatViewHolder>() {
 
     class ChatViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -34,8 +35,8 @@ class ChatAdapter(private var chats: List<ChatItem>) : RecyclerView.Adapter<Chat
 
     override fun onBindViewHolder(holder: ChatViewHolder, position: Int) {
         val chat = chats[position]
-        holder.title.text = chat.title
-        holder.lastMessage.text = chat.lastMessage
+        holder.title.text = chat.data.title
+        holder.lastMessage.text = chat.data.lastMessage.content
         val context = holder.itemView.context
 
         Log.d("AvatarCheck", "Chat: ${chat.title}, Path: ${chat.localPath}")
@@ -66,4 +67,4 @@ class ChatAdapter(private var chats: List<ChatItem>) : RecyclerView.Adapter<Chat
         theme.resolveAttribute(attr, typedValue, true)
         return typedValue.data
     }
-}
+}*/

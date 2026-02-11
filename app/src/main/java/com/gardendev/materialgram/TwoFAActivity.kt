@@ -15,14 +15,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Sms
-import androidx.compose.material.icons.materialIcon
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -39,21 +37,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.Wallpapers
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import com.gardendev.materialgram.ui.theme.MaterialGramTheme
 import org.drinkless.tdlib.TdApi
 
-class CodeActivity : ComponentActivity() {
+class TwoFAActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             MaterialGramTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    CodePage(
+                    TwoFAPage(
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -63,7 +60,7 @@ class CodeActivity : ComponentActivity() {
 }
 
 @Composable
-fun CodePage(modifier: Modifier = Modifier) {
+fun TwoFAPage(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     var code by remember { mutableStateOf("") }
     var isCheckingCode by remember { mutableStateOf(false) }
@@ -83,13 +80,13 @@ fun CodePage(modifier: Modifier = Modifier) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = stringResource(R.string.SentAppCodeTitle),
+                text = stringResource(R.string.TwoStepVerification),
                 fontSize = TextUnit(18f, TextUnitType.Sp),
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = stringResource(R.string.SentAppCodeWithPhone),
+                text = stringResource(R.string.YourPasswordRemember),
                 fontSize = TextUnit(15f, TextUnitType.Sp),
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
@@ -98,37 +95,23 @@ fun CodePage(modifier: Modifier = Modifier) {
             if (isCheckingCode) LinearProgressIndicator()
             TextField(
                 value = code,
-                onValueChange = { if (it.all { char -> char.isDigit() }) code = it },
-                label = { Text(stringResource(R.string.SentSmsCodeTitle)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                leadingIcon = { Icon(Icons.Default.Sms, contentDescription = null) },
+                onValueChange = { code = it },
+                label = { Text(stringResource(R.string.YourPasswordHeader)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                leadingIcon = { Icon(Icons.Default.VpnKey, contentDescription = null) },
             )
             Button(
                 onClick = {
                     isCheckingCode = true
-                    TelegramClient.Telegram.client?.send(TdApi.CheckAuthenticationCode(code)) { result ->
+                    TelegramClient.Telegram.client?.send(TdApi.CheckAuthenticationPassword(code)) { result ->
                         if (result is TdApi.Ok) {
-                            TelegramClient.Telegram.client?.send(TdApi.GetAuthorizationState()) { state ->
-                                when (state) {
-                                    is TdApi.AuthorizationStateWaitPassword -> {
-                                        val intent = Intent(context, TwoFAActivity::class.java)
-                                        context.startActivity(intent)
-                                    }
-
-                                    is TdApi.AuthorizationStateReady -> {
-                                        val intent = Intent(context, MainActivity::class.java)
-                                        intent.flags =
-                                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                        context.startActivity(intent)
-                                    }
-                                }
-                            }
+                            context.startActivity(Intent(context, MainActivity::class.java))
                             isCheckingCode = false
                         }
                         else {
                             isCheckingCode = false
                             code = ""
-                            Toast.makeText(context, R.string.WrongCode, Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, R.string.WrongPassword, Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
@@ -138,12 +121,12 @@ fun CodePage(modifier: Modifier = Modifier) {
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true, wallpaper = Wallpapers.GREEN_DOMINATED_EXAMPLE)
+@Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun TwoFAPreview() {
     MaterialGramTheme {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            CodePage(
+            TwoFAPage(
                 modifier = Modifier.padding(innerPadding)
             )
         }

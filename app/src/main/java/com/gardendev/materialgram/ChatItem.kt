@@ -1,9 +1,7 @@
 package com.gardendev.materialgram
 
+import org.drinkless.tdlib.TdApi
+
 data class ChatItem(
-    val id: Long,
-    val title: String,
-    val lastMessage: String,
-    val localPath: String? = null,
-    val isPinned: Boolean = false // <-- Добавили это
+    val data: TdApi.Chat
 )

@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.gardendev.materialgram.TelegramClient
 
 @Composable
 fun IndeterminateCircularWavyProgressIndicator(
@@ -36,8 +37,6 @@ fun IndeterminateCircularWavyProgressIndicator(
     speed: Float = 1f
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "wavySpinner")
-
-    // 1. Вращение всей дуги (голова индикатора)
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
@@ -45,8 +44,6 @@ fun IndeterminateCircularWavyProgressIndicator(
             animation = tween((2000 / speed).toInt(), easing = LinearEasing)
         ), label = "rotation"
     )
-
-    // 2. Длина дуги (растяжение и сжатие от 30 до 270 градусов)
     val sweepAngle by infiniteTransition.animateFloat(
         initialValue = 30f,
         targetValue = 270f,
@@ -55,8 +52,6 @@ fun IndeterminateCircularWavyProgressIndicator(
             repeatMode = RepeatMode.Reverse
         ), label = "sweep"
     )
-
-    // 3. Бег волны внутри дуги
     val phaseShift by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 2f * Math.PI.toFloat(),
@@ -73,12 +68,9 @@ fun IndeterminateCircularWavyProgressIndicator(
 
         val path = Path()
 
-        // Рисуем только часть круга (от 0 до текущего sweepAngle)
         for (angle in 0..sweepAngle.toInt() step 2) {
-            val totalAngle = angle.toDouble() + rotation // Сдвигаем на общую ротацию
-            val angleRad = Math.toRadians(totalAngle - 90.0) // -90 чтобы начать сверху
-
-            // Волна зависит от угла и фазы
+            val totalAngle = angle.toDouble() + rotation
+            val angleRad = Math.toRadians(totalAngle - 90.0)
             val wave = Math.sin(Math.toRadians(angle.toDouble()) * (waveCount / 5.0) - phaseShift.toDouble())
             val r = baseRadius + (wave.toFloat() * waveHeightPx)
 
