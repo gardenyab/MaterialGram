@@ -1,5 +1,6 @@
 package com.gardendev.materialgram
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,7 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Wallpapers
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -34,6 +37,8 @@ import coil.compose.AsyncImage
 import com.gardendev.materialgram.TelegramClient.Telegram.client
 import com.gardendev.materialgram.ui.components.materialgram.chats.ChatViewModel
 import com.gardendev.materialgram.ui.theme.MaterialGramTheme
+import com.gardendev.materialgram.utils.sendMessage
+import com.gardendev.materialgram.utils.toAnnotatedString
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
@@ -84,9 +89,24 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var highlightedMessageId by remember { mutableLongStateOf(0L) }
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        com.gardendev.materialgram.ui.components.materialgram.events.TelegramEvents.updates.collect { update ->
+            when (update) {
+                is TdApi.UpdateFile -> {
+                    if (update.file.local.isDownloadingCompleted) {
+                        viewModel.updateFile(update.file)
+                    }
+                }
+                is TdApi.UpdateMessageContent -> {
+                    viewModel.updateMessageContent(update.messageId, update.newContent)
+                }
+            }
+        }
+    }
 
     Scaffold(
-        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = {
@@ -104,7 +124,12 @@ fun ChatScreen(
                             }
                         }
                         Spacer(Modifier.width(12.dp))
-                        Text(chatTitle, style = MaterialTheme.typography.titleMedium)
+                        Text(chatTitle, style = MaterialTheme.typography.titleMedium, modifier = Modifier.clickable( onClick = {
+                            val intent = Intent(context, UserInfoPage::class.java).apply {
+                                putExtra("USER_ID", viewModel.currentChatId)
+                            }
+                            context.startActivity(intent)
+                        }))
                     }
                 },
                 navigationIcon = {
@@ -119,7 +144,7 @@ fun ChatScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(top = innerPadding.calculateTopPadding())
+                .padding(innerPadding)
         ) {
             LazyColumn(
                 state = listState,
@@ -171,7 +196,7 @@ fun ChatScreen(
                         TextField(
                             value = inputText,
                             onValueChange = { inputText = it },
-                            placeholder = { Text("Сообщение") },
+                            placeholder = { Text("Message") },
                             modifier = Modifier.fillMaxWidth(),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
@@ -185,7 +210,10 @@ fun ChatScreen(
                     FloatingActionButton(
                         onClick = {
                             if (inputText.isNotBlank()) {
-                                viewModel.sendMessage(inputText)
+                                sendMessage(
+                                    viewModel.currentChatId,
+                                    inputText
+                                )
                                 inputText = ""
                                 scope.launch { listState.animateScrollToItem(0) }
                             }
@@ -217,6 +245,23 @@ fun MessageBubble(
         targetValue = if (isHighlighted) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent,
         animationSpec = tween(durationMillis = 500)
     )
+
+    LaunchedEffect(message.senderId) {
+        if (!isMe && message.senderId is TdApi.MessageSenderUser) {
+            val userId = (message.senderId as TdApi.MessageSenderUser).userId
+            client?.send(TdApi.GetUser(userId)) { res ->
+                if (res is TdApi.User) {
+                    val photo = res.profilePhoto?.small
+                    if (photo != null && !photo.local.isDownloadingCompleted) {
+                        // ЕСЛИ НЕ СКАЧАНО — СКАЧИВАЕМ СРАЗУ
+                        client?.send(TdApi.DownloadFile(photo.id, 1, 0, 0, true)) {}
+                    } else {
+                        avatarPath = photo?.local?.path
+                    }
+                }
+            }
+        }
+    }
 
     LaunchedEffect(message.senderId) {
         if (!isMe) {
@@ -294,33 +339,62 @@ fun MessageBubble(
 
 @Composable
 fun MessageContent(content: TdApi.MessageContent) {
+    // Ограничиваем максимальную ширину медиа (например, 250dp)
+    val mediaModifier = Modifier
+        .widthIn(min=200.dp, max = 500.dp)
+        .clip(RoundedCornerShape(8.dp))
+
     when (content) {
         is TdApi.MessageText -> {
-            Text(text = content.text.text, style = MaterialTheme.typography.bodyLarge)
+            Text(text = content.text.toAnnotatedString(), style = MaterialTheme.typography.bodyLarge)
         }
         is TdApi.MessagePhoto -> {
-            val photo = content.photo.sizes.lastOrNull()
-            if (photo?.photo?.local?.isDownloadingCompleted == true) {
-                AsyncImage(
-                    model = photo.photo.local.path,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                LaunchedEffect(photo) {
-                    photo?.photo?.id?.let { client?.send(TdApi.DownloadFile(it, 1, 0, 0, true)) {} }
+            Column(modifier = Modifier.width(IntrinsicSize.Min)) {
+                val photo = content.photo.sizes.lastOrNull()
+                if (photo?.photo?.local?.isDownloadingCompleted == true) {
+                    AsyncImage(
+                        model = photo.photo.local.path,
+                        contentDescription = null,
+                        modifier = mediaModifier,
+                        contentScale = ContentScale.FillWidth
+                    )
+                } else {
+                    LaunchedEffect(photo) {
+                        photo?.photo?.id?.let { client?.send(TdApi.DownloadFile(it, 1, 0, 0, true)) {} }
+                    }
+                    Box(modifier = mediaModifier.height(200.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(strokeWidth = 2.dp)
+                    }
                 }
-                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                // Добавляем подпись (caption), если она есть
+                if (content.caption.text.isNotEmpty()) {
+                    Text(
+                        text = content.caption.toAnnotatedString(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
                 }
             }
         }
         is TdApi.MessageVideo -> {
-            Box(contentAlignment = Alignment.Center) {
-                val thumb = content.video.thumbnail?.file?.local?.path
-                AsyncImage(model = thumb, contentDescription = null, modifier = Modifier.size(200.dp).clip(RoundedCornerShape(8.dp)))
-                Icon(Icons.Default.PlayArrow, null, tint = Color.White, modifier = Modifier.size(48.dp))
+            Column(modifier = Modifier.width(IntrinsicSize.Min)) {
+                Box(contentAlignment = Alignment.Center, modifier = mediaModifier) {
+                    val thumb = content.video.thumbnail?.file?.local?.path
+                    AsyncImage(
+                        model = thumb,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxWidth(),
+                        contentScale = ContentScale.FillWidth
+                    )
+                    Icon(Icons.Default.PlayArrow, null, tint = Color.White, modifier = Modifier.size(40.dp))
+                }
+                if (content.caption.text.isNotEmpty()) {
+                    Text(
+                        text = content.caption.toAnnotatedString(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         }
     }

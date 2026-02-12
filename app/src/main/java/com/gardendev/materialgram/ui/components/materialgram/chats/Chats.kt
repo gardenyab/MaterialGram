@@ -9,10 +9,21 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Contacts
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toLong
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,10 +39,15 @@ import coil.compose.AsyncImage
 import com.gardendev.materialgram.ChatItem
 import com.gardendev.materialgram.ChatPage
 import com.gardendev.materialgram.TelegramClient.Telegram.client
+import com.gardendev.materialgram.UserInfoPage
+import com.gardendev.materialgram.utils.downloadFile
+import com.gardendev.materialgram.utils.getMe
+import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.jvm.java
 
 @Composable
 fun ChatListItem(
@@ -127,47 +143,170 @@ fun ChatListItem(
         }
     }
 }
-
 @Composable
-fun ChatListScreen(chats: List<ChatItem>) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            text = "MaterialGram",
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.padding(16.dp)
+fun DrawerContent(onItemClick: () -> Unit) {
+    var user by remember { mutableStateOf<TdApi.User?>(null) }
+    LaunchedEffect(Unit) { user = getMe() }
+    val context = LocalContext.current
+
+
+    Column(
+        modifier = Modifier
+            .fillMaxHeight()
+            .padding(top = 16.dp)
+    ) {
+        // --- Секция профиля (Верхушка меню) ---
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                // Здесь потом можно добавить AsyncImage для аватарки
+                LaunchedEffect(user?.profilePhoto?.id) {
+                    downloadFile(user?.profilePhoto?.small?.id)
+                }
+                AsyncImage(
+                    model = user?.profilePhoto?.small?.local?.path,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Text(
+                text = "${user?.firstName} ${if (!user?.lastName.isNullOrEmpty()) user?.lastName else ""}",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = "@${user?.usernames?.activeUsernames[0]}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+        // --- Список элементов меню ---
+        // Используем NavigationDrawerItem — это стандарт M3
+        NavigationDrawerItem(
+            label = { Text("Profile") },
+            selected = false,
+            icon = { Icon(Icons.Default.Person, contentDescription = null) },
+            onClick = {
+                val intent = Intent(context, UserInfoPage::class.java).apply {
+                    putExtra("USER_ID", user!!.id)
+                }
+                context.startActivity(intent)
+            },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            contentPadding = PaddingValues(bottom = 16.dp, start = 16.dp, end = 16.dp)
-        ) {
-            itemsIndexed(
-                items = chats,
-                key = { _, chat -> chat.data.id }
-            ) { index, chat ->
-                val shape = getListItemShape(index, chats.size)
+        NavigationDrawerItem(
+            label = { Text("New group") },
+            selected = false,
+            icon = { Icon(Icons.Default.Group, contentDescription = null) },
+            onClick = { onItemClick() },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+        )
 
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = shape,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                ) {
-                    ChatListItem(
-                        chat = chat.data,
-                        chatName = chat.data.title,
-                        lastMessage = formatMessage(chat.data.lastMessage),
-                        time = formatDate(chat.data.lastMessage?.date ?: 0),
-                        unreadCount = chat.data.unreadCount,
-                        isPinned = isChatPinned(chat.data),
-                        chatId = chat.data.id
+        NavigationDrawerItem(
+            label = { Text("Contacts") },
+            selected = false,
+            icon = { Icon(Icons.Default.Contacts, contentDescription = null) },
+            onClick = { onItemClick() },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+        )
+
+        NavigationDrawerItem(
+            label = { Text("Settings") },
+            selected = false,
+            icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+            onClick = { onItemClick() },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+        )
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChatListScreen(chats: List<ChatItem>) {
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                drawerShape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)
+            ) {
+                DrawerContent(onItemClick = { scope.launch { drawerState.close() } })
+            }
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(
+                            text = "MaterialGram",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Open Menu")
+                        }
+                    },
+                    // Убираем автоматические отступы под системный статус-бар
+                    windowInsets = WindowInsets(0, 0, 0, 0),
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
                     )
+                )
+            }
+        ) { paddingValues ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                itemsIndexed(
+                    items = chats,
+                    key = { _, chat -> chat.data.id }
+                ) { index, chat ->
+                    val shape = getListItemShape(index, chats.size)
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = shape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    ) {
+                        ChatListItem(
+                            chat = chat.data,
+                            chatName = chat.data.title,
+                            lastMessage = formatMessage(chat.data.lastMessage),
+                            time = formatDate(chat.data.lastMessage?.date ?: 0),
+                            unreadCount = chat.data.unreadCount,
+                            isPinned = isChatPinned(chat.data),
+                            chatId = chat.data.id
+                        )
+                    }
                 }
             }
         }
     }
 }
-
 @Composable
 fun getListItemShape(index: Int, totalCount: Int): Shape {
     val large = 20.dp

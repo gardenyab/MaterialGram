@@ -97,7 +97,7 @@ fun StartMenu(modifier: Modifier) {
 
 
 
-@Preview(showBackground = true, showSystemUi = true, wallpaper = Wallpapers.GREEN_DOMINATED_EXAMPLE)
+@Preview(showBackground = true, showSystemUi = true, wallpaper = Wallpapers.RED_DOMINATED_EXAMPLE)
 @Composable
 fun StartPreview() {
     MaterialGramTheme {

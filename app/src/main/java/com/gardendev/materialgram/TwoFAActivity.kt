@@ -13,8 +13,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Password
+import androidx.compose.material.icons.filled.SimCard
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.Button
@@ -37,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Wallpapers
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
@@ -70,14 +75,10 @@ fun TwoFAPage(modifier: Modifier = Modifier) {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.app_name),
-                fontSize = TextUnit(40f, TextUnitType.Sp),
-                fontWeight = FontWeight.Bold
-            )
+            Spacer(modifier = Modifier.height(50.dp))
+            Icon(Icons.Default.Password, contentDescription = null, modifier=Modifier.size(100.dp, 100.dp))
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(R.string.TwoStepVerification),
@@ -99,7 +100,9 @@ fun TwoFAPage(modifier: Modifier = Modifier) {
                 label = { Text(stringResource(R.string.YourPasswordHeader)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 leadingIcon = { Icon(Icons.Default.VpnKey, contentDescription = null) },
+                shape = CircleShape
             )
+            Spacer(modifier = Modifier.height(14.dp))
             Button(
                 onClick = {
                     isCheckingCode = true
@@ -121,7 +124,7 @@ fun TwoFAPage(modifier: Modifier = Modifier) {
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, showSystemUi = true, wallpaper = Wallpapers.RED_DOMINATED_EXAMPLE)
 @Composable
 fun TwoFAPreview() {
     MaterialGramTheme {

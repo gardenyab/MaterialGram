@@ -13,16 +13,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Monitor
 import androidx.compose.material.icons.filled.Sms
-import androidx.compose.material.icons.materialIcon
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -73,14 +74,10 @@ fun CodePage(modifier: Modifier = Modifier) {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.app_name),
-                fontSize = TextUnit(40f, TextUnitType.Sp),
-                fontWeight = FontWeight.Bold
-            )
+            Spacer(modifier = Modifier.height(50.dp))
+            Icon(Icons.Default.Monitor, contentDescription = null, modifier=Modifier.size(100.dp, 100.dp))
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(R.string.SentAppCodeTitle),
@@ -102,7 +99,9 @@ fun CodePage(modifier: Modifier = Modifier) {
                 label = { Text(stringResource(R.string.SentSmsCodeTitle)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 leadingIcon = { Icon(Icons.Default.Sms, contentDescription = null) },
+                shape = CircleShape
             )
+            Spacer(modifier = Modifier.height(14.dp))
             Button(
                 onClick = {
                     isCheckingCode = true
@@ -132,13 +131,13 @@ fun CodePage(modifier: Modifier = Modifier) {
                         }
                     }
                 },
-                shape = ButtonDefaults.elevatedShape
+                shape = ButtonDefaults.outlinedShape
             ) { Text(stringResource(R.string.Confirm))}
         }
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true, wallpaper = Wallpapers.GREEN_DOMINATED_EXAMPLE)
+@Preview(showBackground = true, showSystemUi = true, wallpaper = Wallpapers.RED_DOMINATED_EXAMPLE)
 @Composable
 fun GreetingPreview() {
     MaterialGramTheme {

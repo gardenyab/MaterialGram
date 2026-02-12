@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Wallpapers
 import androidx.compose.ui.unit.dp
 import com.gardendev.materialgram.TelegramClient.Telegram.client
 import com.gardendev.materialgram.ui.components.materialgram.chats.ChatListScreen
@@ -160,7 +161,7 @@ fun ChatListPage(modifier: Modifier = Modifier) {
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
+@Preview(showBackground = true, showSystemUi = true, wallpaper = Wallpapers.RED_DOMINATED_EXAMPLE)
 @Composable
 fun ChatListPagePreview() {
     MaterialGramTheme {

@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">MaterialGram</string>
     <string name="title_activity_start">StartActivity</string>
-    <string name="AppDescriptionShort">An unofficial Telegram client inspired by Material Design</string>
+    <string name="AppDescriptionShort">An unofficial Telegram client inspired by Material Design.\nWe\'ve combined the power of Telegram with the elegance of Google\'s Material Design. Enjoy adaptive colors and seamless navigation</string>
     <string name="Continue">Continue</string>
     <string name="title_activity_number">NumberActivity</string>
     <string name="StartText">Please enter your phone number.</string>
@@ -24,4 +24,6 @@
     <string name="WrongPassword">Wrong password</string>
     <string name="title_activity_main">MainActivity</string>
     <string name="title_activity_chat_page">ChatPage</string>
+    <string name="title_activity_user_profile_page">UserProfilePage</string>
+    <string name="title_activity_user_info_page">UserInfoPage</string>
 </resources>
