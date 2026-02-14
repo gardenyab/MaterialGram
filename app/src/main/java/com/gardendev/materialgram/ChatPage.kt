@@ -37,6 +37,7 @@ import coil.compose.AsyncImage
 import com.gardendev.materialgram.TelegramClient.Telegram.client
 import com.gardendev.materialgram.ui.components.materialgram.chats.ChatViewModel
 import com.gardendev.materialgram.ui.theme.MaterialGramTheme
+import com.gardendev.materialgram.utils.getChatPic
 import com.gardendev.materialgram.utils.sendMessage
 import com.gardendev.materialgram.utils.toAnnotatedString
 import kotlinx.coroutines.delay
@@ -89,6 +90,7 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var highlightedMessageId by remember { mutableLongStateOf(0L) }
+    var chatC by remember { mutableStateOf<TdApi.Chat?>(null) }
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -111,17 +113,14 @@ fun ChatScreen(
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        var chatAvatar by remember { mutableStateOf<String?>(null) }
                         LaunchedEffect(chatTitle) {
                             viewModel.currentChat.value?.let { chat ->
-                                chatAvatar = chat.photo?.small?.local?.path
+                                chatC = chat
                             }
                         }
 
                         Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)) {
-                            if (chatAvatar != null) {
-                                AsyncImage(model = chatAvatar, contentDescription = null, contentScale = ContentScale.Crop)
-                            }
+                            getChatPic(chatC, 50.dp)
                         }
                         Spacer(Modifier.width(12.dp))
                         Text(chatTitle, style = MaterialTheme.typography.titleMedium, modifier = Modifier.clickable( onClick = {
@@ -237,6 +236,7 @@ fun MessageBubble(
     isHighlighted: Boolean,
     onReplyClick: (Long) -> Unit
 ) {
+    val context = LocalContext.current
     val isMe = message.isOutgoing
     var senderName by remember { mutableStateOf("...") }
     var avatarPath by remember { mutableStateOf<String?>(null) }
@@ -253,7 +253,6 @@ fun MessageBubble(
                 if (res is TdApi.User) {
                     val photo = res.profilePhoto?.small
                     if (photo != null && !photo.local.isDownloadingCompleted) {
-                        // ЕСЛИ НЕ СКАЧАНО — СКАЧИВАЕМ СРАЗУ
                         client?.send(TdApi.DownloadFile(photo.id, 1, 0, 0, true)) {}
                     } else {
                         avatarPath = photo?.local?.path
@@ -314,6 +313,18 @@ fun MessageBubble(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+                        .clickable( onClick = {
+                                val userId: Long? = when (val sender = message.senderId) {
+                                    is TdApi.MessageSenderUser -> sender.userId
+                                    is TdApi.MessageSenderChat -> null
+                                    else -> null
+                                }
+                                val intent = Intent(context, UserInfoPage::class.java).apply {
+                                    putExtra("USER_ID", userId)
+                                }
+                                context.startActivity(intent)
+                            }
+                        )
                 )
             }
 
@@ -339,7 +350,6 @@ fun MessageBubble(
 
 @Composable
 fun MessageContent(content: TdApi.MessageContent) {
-    // Ограничиваем максимальную ширину медиа (например, 250dp)
     val mediaModifier = Modifier
         .widthIn(min=200.dp, max = 500.dp)
         .clip(RoundedCornerShape(8.dp))
@@ -366,7 +376,6 @@ fun MessageContent(content: TdApi.MessageContent) {
                         CircularProgressIndicator(strokeWidth = 2.dp)
                     }
                 }
-                // Добавляем подпись (caption), если она есть
                 if (content.caption.text.isNotEmpty()) {
                     Text(
                         text = content.caption.toAnnotatedString(),

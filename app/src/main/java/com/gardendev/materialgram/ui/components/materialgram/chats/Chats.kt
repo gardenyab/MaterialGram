@@ -41,6 +41,8 @@ import com.gardendev.materialgram.ChatPage
 import com.gardendev.materialgram.TelegramClient.Telegram.client
 import com.gardendev.materialgram.UserInfoPage
 import com.gardendev.materialgram.utils.downloadFile
+import com.gardendev.materialgram.utils.formatDate
+import com.gardendev.materialgram.utils.getChatPic
 import com.gardendev.materialgram.utils.getMe
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
@@ -77,26 +79,7 @@ fun ChatListItem(
         val photo = chat.photo?.small
         val localPath = photo?.local?.path
 
-        Box(modifier = Modifier.size(52.dp)) {
-            if (!localPath.isNullOrEmpty()) {
-                AsyncImage(
-                    model = localPath,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize().clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                LaunchedEffect(photo?.id) {
-                    photo?.id?.let { client?.send(TdApi.DownloadFile(it, 1, 0, 0, true)) {} }
-                }
-                Box(
-                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(chatName.take(1).uppercase(), color = MaterialTheme.colorScheme.onPrimaryContainer)
-                }
-            }
-        }
+        getChatPic(chat, 52.dp)
 
         Spacer(modifier = Modifier.width(16.dp))
 
@@ -106,7 +89,7 @@ fun ChatListItem(
                     text = chatName,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
-                    color = MaterialTheme.colorScheme.onSurface // Явный цвет
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
@@ -155,7 +138,6 @@ fun DrawerContent(onItemClick: () -> Unit) {
             .fillMaxHeight()
             .padding(top = 16.dp)
     ) {
-        // --- Секция профиля (Верхушка меню) ---
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -169,7 +151,6 @@ fun DrawerContent(onItemClick: () -> Unit) {
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
-                // Здесь потом можно добавить AsyncImage для аватарки
                 LaunchedEffect(user?.profilePhoto?.id) {
                     downloadFile(user?.profilePhoto?.small?.id)
                 }
@@ -196,8 +177,6 @@ fun DrawerContent(onItemClick: () -> Unit) {
 
         Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-        // --- Список элементов меню ---
-        // Используем NavigationDrawerItem — это стандарт M3
         NavigationDrawerItem(
             label = { Text("Profile") },
             selected = false,
@@ -266,7 +245,6 @@ fun ChatListScreen(chats: List<ChatItem>) {
                             Icon(Icons.Default.Menu, contentDescription = "Open Menu")
                         }
                     },
-                    // Убираем автоматические отступы под системный статус-бар
                     windowInsets = WindowInsets(0, 0, 0, 0),
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface
@@ -335,11 +313,4 @@ private fun formatMessage(message: TdApi.Message?): String {
         else -> "Message"
     }
     return "$prefix$text"
-}
-
-fun formatDate(unixTimestamp: Int): String {
-    if (unixTimestamp == 0) return ""
-    val date = Date(unixTimestamp.toLong() * 1000)
-    val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
-    return formatter.format(date)
 }

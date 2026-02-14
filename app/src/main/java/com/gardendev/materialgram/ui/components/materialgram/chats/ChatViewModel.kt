@@ -38,6 +38,19 @@ class ChatViewModel(private val client: Client) : ViewModel() {
                             _messages.update { currentList -> listOf(update.message) + currentList }
                         }
                     }
+                    is TdApi.UpdateMessageContent -> {
+                        updateMessageContent(update.messageId, update.newContent)
+                    }
+                    is TdApi.UpdateMessageEdited -> {
+                        _messages.update { currentList ->
+                            currentList.map { msg ->
+                                if (msg.id == update.messageId) {
+                                    msg.editDate = update.editDate
+                                    msg
+                                } else msg
+                            }.toList()
+                        }
+                    }
                     is TdApi.UpdateChatAction -> {
                         if (update.chatId == currentChatId) {
                             handleTypingAction(update.action)
@@ -110,22 +123,18 @@ class ChatViewModel(private val client: Client) : ViewModel() {
     }
 
     fun updateMessageContent(messageId: Long, newContent: TdApi.MessageContent) {
-        viewModelScope.launch { // Используем корутину для безопасности потоков
-            _messages.update { currentList ->
-                currentList.map { msg ->
-                    if (msg.id == messageId) {
-                        // Вместо создания нового объекта, меняем поле у существующего
-                        // (в TDLib Java объекты мутабельны)
-                        msg.content = newContent
-                        msg
-                    } else msg
-                }
-            }
+        _messages.update { currentList ->
+            currentList.map { msg ->
+                if (msg.id == messageId) {
+                    msg.content = newContent
+                    msg
+                } else msg
+            }.toList()
         }
     }
-    // Внутри ChatViewModel
+
     fun addMessage(message: TdApi.Message) {
-        if (message.chatId == currentChatId) { // Проверяем, что сообщение из этого чата
+        if (message.chatId == currentChatId) {
             _messages.value = listOf(message) + _messages.value
         }
     }
@@ -137,7 +146,6 @@ class ChatViewModel(private val client: Client) : ViewModel() {
         client.send(TdApi.GetChatHistory(chatId, 0, 0, 150, false)) { res ->
             when (res) {
                 is TdApi.Messages -> {
-                    // В loadHistory заменяем Handler на:
                     viewModelScope.launch(Dispatchers.Main) {
                         _messages.value = res.messages.toList()
                     }
@@ -150,14 +158,11 @@ class ChatViewModel(private val client: Client) : ViewModel() {
     }
 
     fun updateFile(file: TdApi.File) {
-        // Чтобы Compose увидел изменения в путях файлов (local.path),
-        // нужно создать новый список. Просто .map{it} достаточно для триггера.
         _messages.update { currentList ->
             currentList.map { it }
         }
     }
 
-    // Вызывай это, когда пользователь выходит из экрана чата (например, в Activity.onDestroy или onBack)
     fun closeChat() {
         if (currentChatId != 0L) {
             client.send(TdApi.CloseChat(currentChatId)) { }

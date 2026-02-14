@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
             else if (update is TdApi.UpdateFile) {
                 val file = update.file
                 if (file.local.isDownloadingCompleted && !file.local.path.isNullOrEmpty()) {
-                    //asd
+                    // Я не помню что тут должно было быть :/
                 }
             }
         }
@@ -98,22 +98,16 @@ fun ChatListPage(modifier: Modifier = Modifier) {
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        // 1. Сначала просим TDLib загрузить чаты в память (кэш)
         client?.send(TdApi.LoadChats(TdApi.ChatListMain(), 100)) { result ->
             if (result is TdApi.Ok || result is TdApi.Error) {
-                // Даже если ошибка (например, уже загружены), пробуем получить список
-
-                // 2. Теперь запрашиваем список ID чатов
                 client?.send(TdApi.GetChats(TdApi.ChatListMain(), 100)) { chatsResult ->
                     if (chatsResult is TdApi.Chats) {
                         chatsResult.chatIds.forEach { chatId ->
-                            // 3. Получаем детали каждого чата (теперь это будет мгновенно из кэша)
                             client?.send(TdApi.GetChat(chatId)) { res ->
                                 if (res is TdApi.Chat) {
                                     (context as? Activity)?.runOnUiThread {
                                         if (chats.none { it.data.id == res.id }) {
                                             chats.add(ChatItem(res))
-                                            // Сортируем по дате
                                             chats.sortByDescending { it.data.lastMessage?.date ?: 0 }
                                         }
                                     }
@@ -125,10 +119,6 @@ fun ChatListPage(modifier: Modifier = Modifier) {
             }
         }
     }
-    // ... остальной код подписки на TelegramEvents.updates
-
-    // 2. ПОДПИСКА НА ОБНОВЛЕНИЯ (Чтобы список ожил)
-    // 2. ПОДПИСКА НА ОБНОВЛЕНИЯ
     LaunchedEffect(Unit) {
         TelegramEvents.updates.collect { update ->
             when (update) {
@@ -138,17 +128,12 @@ fun ChatListPage(modifier: Modifier = Modifier) {
                         val updatedChatItem = chats[index]
                         updatedChatItem.data.lastMessage = update.lastMessage
                         chats[index] = updatedChatItem
-
-                        // Вызываем нашу умную сортировку
                         sortChatList(chats)
                     }
                 }
                 is TdApi.UpdateChatPosition -> {
-                    // Это обновление приходит, когда чат закрепляют или открепляют
                     val index = chats.indexOfFirst { it.data.id == update.chatId }
                     if (index != -1) {
-                        // TDLib обновляет позиции в массиве positions
-                        // Для простоты мы можем просто пересортировать список
                         sortChatList(chats)
                     }
                 }
@@ -176,16 +161,13 @@ fun ChatListPagePreview() {
 private fun sortChatList(chats: MutableList<ChatItem>) {
     chats.sortWith(
         compareByDescending<ChatItem> { item ->
-            // 1. Сначала проверяем, закреплен ли чат
             isChatPinned(item.data)
         }.thenByDescending { item ->
-            // 2. Затем сортируем по дате последнего сообщения
             item.data.lastMessage?.date ?: 0
         }
     )
 }
 
 private fun isChatPinned(chat: TdApi.Chat): Boolean {
-    // Проверяем все позиции чата, есть ли среди них закреп в главном списке
     return chat.positions.any { it.list is TdApi.ChatListMain && it.isPinned }
 }

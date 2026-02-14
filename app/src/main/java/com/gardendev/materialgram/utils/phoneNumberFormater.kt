@@ -10,11 +10,8 @@ class PhoneNumberFormatter : VisualTransformation {
     private val phoneUtil = PhoneNumberUtil.getInstance()
 
     override fun filter(text: AnnotatedString): TransformedText {
-        // Добавляем +, если его нет для корректного парсинга libphonenumber
         val rawInput = text.text
         val fullNumber = if (rawInput.startsWith("+")) rawInput else "+$rawInput"
-
-        // Форматируем строку через твой PhoneNumberFormatter или напрямую
         val formatted = try {
             val numberProto = phoneUtil.parse(fullNumber, null)
             phoneUtil.format(numberProto, PhoneNumberUtil.PhoneNumberFormat.INTERNATIONAL)
@@ -26,8 +23,6 @@ class PhoneNumberFormatter : VisualTransformation {
             text = AnnotatedString(formatted),
             offsetMapping = object : OffsetMapping {
                 override fun originalToTransformed(offset: Int): Int {
-                    // Очень упрощенная логика: курсор в конец, если текст сложный
-                    // Для идеального ввода нужна посимвольная сверка
                     return formatted.length
                 }
 

@@ -9,6 +9,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 fun sendMessage(
     chatId: Long,
@@ -56,4 +59,11 @@ fun TdApi.FormattedText.toAnnotatedString(): AnnotatedString {
         builder.addStyle(style, entity.offset, entity.offset + entity.length)
     }
     return builder.toAnnotatedString()
+}
+
+fun formatDate(unixTimestamp: Int): String {
+    if (unixTimestamp == 0) return ""
+    val date = Date(unixTimestamp.toLong() * 1000)
+    val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return formatter.format(date)
 }

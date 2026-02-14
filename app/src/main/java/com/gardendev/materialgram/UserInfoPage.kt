@@ -1,11 +1,9 @@
 package com.gardendev.materialgram
 
-import android.inputmethodservice.Keyboard
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,25 +15,26 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AlternateEmail
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarRate
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,53 +43,47 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.Wallpapers
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.gardendev.materialgram.TelegramClient.Telegram.client
 import com.gardendev.materialgram.ui.theme.MaterialGramTheme
 import com.gardendev.materialgram.utils.downloadFile
-import com.gardendev.materialgram.utils.getUser
+import com.gardendev.materialgram.utils.formatDate
 import com.gardendev.materialgram.utils.getUserFullInfo
-import com.gardendev.materialgram.utils.toAnnotatedString
 import org.drinkless.tdlib.TdApi
 import kotlin.coroutines.resume
+import com.gardendev.materialgram.utils.getUserPic
 
 class UserInfoPage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Получаем ID из интента
         val userId = intent.getLongExtra("USER_ID", 0L)
 
         setContent {
-            // 2. Создаем состояние для пользователя
             var user by remember { mutableStateOf<TdApi.User?>(null) }
 
-            // 3. Загружаем данные через LaunchedEffect (это и есть корутина)
             LaunchedEffect(userId) {
                 if (userId != 0L) {
-                    // Здесь вызываем вашу suspend функцию
                     user = getUser(userId)
                 }
             }
 
             MaterialGramTheme {
-                // 4. Проверяем, загрузился ли пользователь
                 val currentUser = user
                 if (currentUser != null) {
-                    // Передаем уже не nullable объект
                     UserProfileScreen(
                         user = currentUser,
                         onBackClick = { finish() }
                     )
                 } else {
-                    // Пока данные грузятся, показываем индикатор
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -102,7 +95,6 @@ class UserInfoPage : ComponentActivity() {
         }
     }
 
-    // Пример реализации функции внутри Activity (или вынесите в репозиторий)
     private suspend fun getUser(userId: Long): TdApi.User? {
         return kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
             client?.send(TdApi.GetUser(userId)) { result ->
@@ -119,21 +111,58 @@ class UserInfoPage : ComponentActivity() {
 @Preview(showBackground = true, showSystemUi = true, wallpaper = Wallpapers.RED_DOMINATED_EXAMPLE)
 @Composable
 fun UserProfilePreview() {
-    // Создаем "фейкового" пользователя для отображения в студии
     val mockUser = TdApi.User().apply {
         firstName = "Garden"
         lastName = "Dev"
         phoneNumber = "1234567890"
         usernames = TdApi.Usernames(
-            arrayOf("material_gram"), // activeUsernames
-            arrayOf(""),                // disabledUsernames
-            "",                       // editableUsername             // verificationStatus (или второй строковый параметр)
+            arrayOf("material_gram"),
+            arrayOf(""),
+            "",
+        )
+        status = TdApi.UserStatusOnline()
+    }
+
+    val fullUser = TdApi.UserFullInfo().apply {
+        firstProfileAudio = TdApi.Audio(
+            190,
+            "TestAudio",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        )
+        bio = TdApi.FormattedText("Test bio", null)
+        birthdate = TdApi.Birthdate(
+            31,
+            12,
+            2026
+        )
+        businessInfo = TdApi.BusinessInfo(
+            TdApi.BusinessLocation(null, "Test adress"),
+            null,
+            null,
+            100,
+            1500,
+            null,
+            null,
+            null)
+        rating = TdApi.UserRating(
+            1,
+            false,
+            1234,
+            500,
+            5000
         )
     }
 
     MaterialGramTheme {
         UserProfileScreen(
             user = mockUser,
+            fullUser = fullUser,
             onBackClick = {}
         )
     }
@@ -143,26 +172,28 @@ fun UserProfilePreview() {
 @Composable
 fun UserProfileScreen(
     user: TdApi.User,
+    fullUser: TdApi.UserFullInfo? = null,
     onBackClick: () -> Unit
 ) {
-    var fullUser by remember {mutableStateOf<TdApi.UserFullInfo?>(null)}
+    var fullUser by remember {mutableStateOf<TdApi.UserFullInfo?>(fullUser)}
     LaunchedEffect(Unit) {
-        fullUser = getUserFullInfo(user.id)
+        if (fullUser == null)
+            fullUser = getUserFullInfo(user.id)
         downloadFile(user.profilePhoto?.big?.id)
     }
     Scaffold(
         topBar = {
-            LargeTopAppBar(
-                title = { Text("${user.firstName} ${user.lastName.orEmpty()}") },
+            TopAppBar(
+                title = { },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Редактировать */ }) {
+                    /*IconButton(onClick = { /* Редактировать */ }) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit")
-                    }
+                    }*/
                 }
             )
         }
@@ -174,43 +205,57 @@ fun UserProfileScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // --- Аватарка ---
-            val photoPath = user.profilePhoto?.big?.local?.path
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .padding(top = 16.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(end = 0.dp)
             ) {
-                if (!photoPath.isNullOrEmpty()) {
-                    AsyncImage(
-                        model = photoPath,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
+                getUserPic(user)
+                Spacer(modifier = Modifier.width(30.dp))
+                Column(
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Text(
-                        modifier = Modifier.clip(CircleShape),
-                        text = user.firstName.take(1),
-                        style = MaterialTheme.typography.displayMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        "${user.firstName} ${user.lastName.orEmpty()}",
+                        fontSize = TextUnit(25f, TextUnitType.Sp),
+                        fontWeight = FontWeight.Bold
                     )
+                    var status: String? = null
+
+                    if (user.status is TdApi.UserStatusOffline) status = "Was ${formatDate((user.status as TdApi.UserStatusOffline).wasOnline)}"
+                    else if (user.status is TdApi.UserStatusOnline) status = "Online"
+                    else if (user.status is TdApi.UserStatusRecently) status = "Was recently"
+                    else if (user.status is TdApi.UserStatusLastMonth) status = "Was at this month"
+                    else if (user.status is TdApi.UserStatusLastWeek) status = "Was at this week"
+                    else if (user.status is TdApi.UserStatusEmpty) status = "Offline"
+                    else status = "Idk"
+
+                    Spacer(modifier = Modifier.height(3.dp))
+
+                    Text(
+                        "${status}",
+                        fontStyle = FontStyle.Italic
+                    )
+                    if (fullUser?.firstProfileAudio != null) {
+                        Text(
+                            "${fullUser?.firstProfileAudio?.title ?: "None"}",
+                        )
+                    }
                 }
             }
-
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- Инфо-карточки ---
+            var items: List<InfoItem> = listOf()
+
+            if (user.phoneNumber != "") items += InfoItem(Icons.Default.Phone, "Phone", "+${user.phoneNumber.take(1)}***********")
+            if (user.usernames?.activeUsernames?.firstOrNull() != null) items += InfoItem(Icons.Default.AlternateEmail, "Username", user.usernames?.activeUsernames?.firstOrNull()?.let { "@$it" } ?: "None")
+            if (fullUser?.bio?.text != null) items += InfoItem(Icons.Default.Info, "Bio", fullUser?.bio?.text.toString())
+            if (fullUser?.birthdate != null) items += InfoItem(Icons.Default.Cake, "Birthday", "${fullUser?.birthdate?.day}.${fullUser?.birthdate?.month}.${fullUser?.birthdate?.year}")
+            if (fullUser?.businessInfo?.location != null) items += InfoItem(Icons.Default.Map, "Adress", "${fullUser?.businessInfo?.location?.address}")
+            if (fullUser?.rating != null) items += InfoItem(Icons.Default.StarRate, "Rating", "${fullUser?.rating?.level}")
             InfoSection(
                 title = "Account",
-                items = listOf(
-                    InfoItem(Icons.Default.Phone, "Phone", "+${user.phoneNumber.take(1)}***********"),
-                    InfoItem(Icons.Default.AlternateEmail, "Username", user.usernames?.activeUsernames?.firstOrNull()?.let { "@$it" } ?: "None"),
-                    InfoItem(Icons.Default.Info, "Bio", fullUser?.bio?.text.toString()) // Bio берется через GetUserFullInfo
-                )
+                items = items
             )
         }
     }
