@@ -62,6 +62,7 @@ class ChatPage : ComponentActivity() {
                     }
                 )
 
+
                 LaunchedEffect(chatId) {
                     if (chatId != 0L) {
                         chatViewModel.loadHistory(chatId)
