@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.Wallpapers
 import androidx.compose.ui.unit.dp
@@ -121,7 +122,10 @@ fun ChatScreen(
                         }
 
                         Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)) {
-                            getChatPic(chatC, 50.dp)
+                            viewModel.currentChat.value?.let { chat ->
+                                getChatPic(chat, 50.dp)
+                            }
+
                         }
                         Spacer(Modifier.width(12.dp))
                         Text(chatTitle, style = MaterialTheme.typography.titleMedium, modifier = Modifier.clickable( onClick = {
@@ -308,28 +312,10 @@ fun MessageBubble(
         }
 
         Column(horizontalAlignment = if (isMe) Alignment.End else Alignment.Start) {
-            if (showSenderInfo && !isMe) {
-                Text(
-                    text = senderName,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
-                        .clickable( onClick = {
-                                val userId: Long? = when (val sender = message.senderId) {
-                                    is TdApi.MessageSenderUser -> sender.userId
-                                    is TdApi.MessageSenderChat -> null
-                                    else -> null
-                                }
-                                val intent = Intent(context, UserInfoPage::class.java).apply {
-                                    putExtra("USER_ID", userId)
-                                }
-                                context.startActivity(intent)
-                            }
-                        )
-                )
-            }
+
 
             Surface(
+
                 color = if (isMe) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
                 shape = RoundedCornerShape(
                     topStart = 16.dp,
@@ -338,9 +324,40 @@ fun MessageBubble(
                     bottomEnd = if (isMe && !showSenderInfo) 4.dp else 16.dp
                 )
             ) {
-                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+
+                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)) {
+                    if (showSenderInfo && !isMe) {
+                        Spacer(modifier=Modifier.height(15.dp))
+                        Text(
+                            text = senderName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+                                .clickable( onClick = {
+                                    val userId: Long? = when (val sender = message.senderId) {
+                                        is TdApi.MessageSenderUser -> sender.userId
+                                        is TdApi.MessageSenderChat -> null
+                                        else -> null
+                                    }
+                                    val intent = Intent(context, UserInfoPage::class.java).apply {
+                                        putExtra("USER_ID", userId)
+                                    }
+                                    context.startActivity(intent)
+                                }
+                                )
+                        )
+                        Spacer(modifier=Modifier.height(15.dp))
+                    }
                     if (message.replyTo is TdApi.MessageReplyToMessage) {
-                        ReplyPreview((message.replyTo as TdApi.MessageReplyToMessage).messageId, onReplyClick)
+                        val reply = message.replyTo as TdApi.MessageReplyToMessage
+
+                        val quoteText = reply.quote?.text?.text ?: ""
+
+                        ReplyPreview(
+                            reply.messageId,
+                            onReplyClick,
+                            reply.quote?.text?.text ?: ""
+                        )
                     }
                     MessageContent(message.content)
                 }
@@ -405,13 +422,23 @@ fun MessageContent(content: TdApi.MessageContent) {
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
+                else {
+                    Text(
+                        text = "Unsupported content",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
+        }
+        else -> {
+            Text(text = "Unsupported content. Visit @MaterialGramUpdates", style = MaterialTheme.typography.bodyLarge)
         }
     }
 }
 
 @Composable
-fun ReplyPreview(replyId: Long, onClick: (Long) -> Unit) {
+fun ReplyPreview(replyId: Long, onClick: (Long) -> Unit, text: String) {
     Surface(
         modifier = Modifier
             .padding(bottom = 6.dp)
@@ -422,7 +449,7 @@ fun ReplyPreview(replyId: Long, onClick: (Long) -> Unit) {
         Row(modifier = Modifier.padding(4.dp).height(IntrinsicSize.Min)) {
             Box(modifier = Modifier.width(3.dp).fillMaxHeight().background(MaterialTheme.colorScheme.primary))
             Spacer(Modifier.width(8.dp))
-            Text("Ответ на сообщение", style = MaterialTheme.typography.labelSmall)
+            Text(AnnotatedString("Some text"), style = MaterialTheme.typography.labelSmall)
         }
     }
 }
